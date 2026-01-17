@@ -10,4 +10,10 @@ If the drawing is already complete, empty, or if you cannot provide a meaningful
 - Respond ONLY with a brief text message explaining that no autocomplete is needed.
 - DO NOT generate an image.
 
+**CRITICAL DRAWING CONSTRAINTS (if help is needed):**
+- ALWAYS generate an overlay image of the canvas additions that matches the background color EXACTLY; i.e. if the background is white, generate a white background. 
+- DO NOT remove, modify, move, or touch ANY of the image's existing content. Leave everything EXACTLY as it is and only add to it.
+- Match the user's exact artistic style, line weight, and texture.
+- NEVER update the background color.
+
 Be extremely thoughtful about when to offer help—only provide a suggestion if there is a clear "in-progress" subject that would benefit from completion.
