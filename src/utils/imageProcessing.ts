@@ -38,12 +38,6 @@ export async function correctYellowedWhites(
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        // alpha is at data[i + 3]
-
-        // Check if pixel is "near white"
-        // A yellowed white typically has high R and G but slightly lower B
-        // We want to catch pixels where all channels are high (near white)
-        // or where R and G are very high but B is slightly lower (yellowish)
 
         const minChannel = Math.min(r, g, b);
         const maxChannel = Math.max(r, g, b);
@@ -54,8 +48,7 @@ export async function correctYellowedWhites(
           data[i + 1] = 255; // G
           data[i + 2] = 255; // B
         }
-        // Also catch yellowed whites: high R and G (>= threshold),
-        // with B slightly lower but still quite high (>= threshold - 15)
+
         else if (r >= threshold && g >= threshold && b >= threshold - 15 && b < threshold) {
           data[i] = 255;     // R
           data[i + 1] = 255; // G
@@ -63,10 +56,8 @@ export async function correctYellowedWhites(
         }
       }
 
-      // Put the modified pixel data back
       ctx.putImageData(imageData, 0, 0);
 
-      // Convert back to base64 data URL
       const processedUrl = canvas.toDataURL('image/png');
       resolve(processedUrl);
     };
