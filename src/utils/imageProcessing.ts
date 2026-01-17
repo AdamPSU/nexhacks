@@ -12,7 +12,7 @@ export async function correctYellowedWhites(
 ): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    
+
     img.onload = () => {
       // Create an offscreen canvas
       const canvas = document.createElement('canvas');

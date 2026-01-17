@@ -17,7 +17,9 @@ export async function POST(req: NextRequest) {
 
     if (!imageFile) return NextResponse.json({ error: 'No image provided' }, { status: 400 });
 
-    const basePrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'artist.txt'), 'utf8');    
+    const basePrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'artist.txt'), 'utf8');
+    
+    // Convert File to base64 for Gemini SDK
     const buffer = Buffer.from(await imageFile.arrayBuffer());
     const base64Data = buffer.toString('base64');
     const mimeType = imageFile.type || 'image/jpeg';
