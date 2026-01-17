@@ -15,7 +15,6 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
   const [status, setStatus] = useState<StatusIndicatorState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>("");
-  const [isAIEnabled, setIsAIEnabled] = useState<boolean>(false);
   
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -34,21 +33,19 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
     async (options?: {
       promptOverride?: string;
       force?: boolean;
-      source?: "auto" | "voice";
-    }): Promise<boolean> => {
+      source?: "auto" | "voice" | "chat";
+    }): Promise<{ success: boolean; textContent: string }> => {
       if (
         !editor ||
         isProcessingRef.current ||
         (isVoiceSessionActive && options?.source !== "voice")
       ) {
-        return false;
+        return { success: false, textContent: "" };
       }
-
-      if (!isAIEnabled && options?.source !== "voice") return false;
 
       const shapeIds = editor.getCurrentPageShapeIds();
       if (shapeIds.size === 0) {
-        return false;
+        return { success: false, textContent: "" };
       }
 
       isProcessingRef.current = true;
@@ -61,7 +58,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         
         if (shapesToCapture.length === 0) {
           isProcessingRef.current = false;
-          return false;
+          return { success: false, textContent: "" };
         }
 
         // Optimized Capture: Using viewport but with compression and lower scale
@@ -74,7 +71,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           padding: 0,
         });
 
-        if (!blob || signal.aborted) return false;
+        if (!blob || signal.aborted) return { success: false, textContent: "" };
 
         // OPTIMIZATION: Skip Base64 conversion and send raw binary via FormData
         const formData = new FormData();
@@ -112,10 +109,10 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           setStatus("idle");
           setStatusMessage("");
           isProcessingRef.current = false;
-          return false;
+          return { success: true, textContent };
         }
 
-        if (signal.aborted) return false;
+        if (signal.aborted) return { success: false, textContent: "" };
 
         const assetId = AssetRecordType.createId();
         const img = new Image();
@@ -126,7 +123,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           img.src = imageUrl;
         });
 
-        if (signal.aborted) return false;
+        if (signal.aborted) return { success: false, textContent: "" };
 
         isUpdatingImageRef.current = true;
 
@@ -182,12 +179,12 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           isUpdatingImageRef.current = false;
         }, 100);
 
-        return true;
+        return { success: true, textContent };
       } catch (error) {
         if (signal.aborted) {
           setStatus("idle");
           setStatusMessage("");
-          return false;
+          return { success: false, textContent: "" };
         }
         
         logger.error({ error }, 'Auto-generation error');
@@ -200,13 +197,13 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           setErrorMessage("");
         }, 3000);
 
-        return false;
+        return { success: false, textContent: "" };
       } finally {
         isProcessingRef.current = false;
         abortControllerRef.current = null;
       }
     },
-    [editor, pendingImageIds, isVoiceSessionActive, isAIEnabled, getStatusMessage],
+    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage],
   );
 
   const handleAutoGeneration = useCallback(() => {
@@ -266,8 +263,6 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
     status,
     errorMessage,
     statusMessage,
-    isAIEnabled,
-    setIsAIEnabled,
     generateSolution,
     handleAccept,
     handleReject,

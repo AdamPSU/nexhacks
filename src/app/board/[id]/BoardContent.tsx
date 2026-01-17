@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TLShapeId } from "tldraw";
 import { Button } from "@/components/ui/button";
@@ -14,17 +14,20 @@ import { useCanvasSolver } from "@/hooks/useCanvasSolver";
 import { useBoardSync } from "@/hooks/useBoardSync";
 import { VoiceControls } from "@/components/VoiceControls";
 import { StatusIndicator } from "@/components/StatusIndicator";
+import { AIChatSidebar } from "@/components/AIChatSidebar";
 
 function ImageActionButtons({
   pendingImageIds,
   onAccept,
   onReject,
   isVoiceSessionActive,
+  isChatOpen,
 }: {
   pendingImageIds: TLShapeId[];
   onAccept: (shapeId: TLShapeId) => void;
   onReject: (shapeId: TLShapeId) => void;
   isVoiceSessionActive: boolean;
+  isChatOpen: boolean;
 }) {
   if (pendingImageIds.length === 0) return null;
   const currentImageId = pendingImageIds[pendingImageIds.length - 1];
@@ -34,11 +37,12 @@ function ImageActionButtons({
       style={{
         position: 'absolute',
         top: isVoiceSessionActive ? '56px' : '10px',
-        left: '50%',
+        left: isChatOpen ? 'calc(50% + 175px)' : '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
         display: 'flex',
         gap: '8px',
+        transition: 'left 0.3s ease-in-out'
       }}
     >
       <Button variant="default" onClick={() => onAccept(currentImageId)}>
@@ -56,14 +60,24 @@ function ImageActionButtons({
 export function BoardContent({ id }: { id: string }) {
   const router = useRouter();
   const [isVoiceSessionActive, setIsVoiceSessionActive] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        setIsChatOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const {
     pendingImageIds,
     status,
     errorMessage,
     statusMessage,
-    isAIEnabled,
-    setIsAIEnabled,
     generateSolution,
     handleAccept,
     handleReject,
@@ -90,25 +104,17 @@ export function BoardContent({ id }: { id: string }) {
           style={{
             position: 'absolute',
             top: '16px',
-            left: '16px',
+            left: isChatOpen ? '366px' : '16px',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
+            transition: 'left 0.3s ease-in-out'
           }}
         >
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft01Icon size={20} strokeWidth={2} />
           </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant={isAIEnabled ? "default" : "secondary"}
-              onClick={() => setIsAIEnabled(!isAIEnabled)}
-              className="w-24 shadow-sm"
-            >
-              {isAIEnabled ? "Disable AI" : "Enable AI"}
-            </Button>
-          </div>
         </div>
       )}
 
@@ -120,11 +126,25 @@ export function BoardContent({ id }: { id: string }) {
         />
       )}
 
+      <AIChatSidebar
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        status={status}
+        onSubmit={async (prompt) => {
+          return await generateSolution({
+            promptOverride: prompt,
+            source: "chat",
+            force: true,
+          });
+        }}
+      />
+
       <ImageActionButtons
         pendingImageIds={pendingImageIds}
         isVoiceSessionActive={isVoiceSessionActive}
         onAccept={handleAccept}
         onReject={handleReject}
+        isChatOpen={isChatOpen}
       />
 
       <VoiceControls

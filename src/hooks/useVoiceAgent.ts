@@ -13,7 +13,7 @@ interface UseVoiceAgentProps {
   onSessionChange: (active: boolean) => void;
   onSolveWithPrompt: (
     instructions?: string
-  ) => Promise<boolean>;
+  ) => Promise<{ success: boolean; textContent: string }>;
 }
 
 export function useVoiceAgent({
@@ -152,10 +152,10 @@ export function useVoiceAgent({
           setStatus("callingTool");
           setStatusDetail("Updating your canvas...");
 
-          const success =
+          const { success } =
             (await onSolveWithPrompt(
               args.instructions ?? undefined,
-            )) ?? false;
+            )) ?? { success: false, textContent: "" };
 
           dc.send(
             JSON.stringify({
