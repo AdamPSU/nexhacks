@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "gemini-hackathon",
+      "name": "nexhacks",
       "dependencies": {
         "@ai-sdk/openai": "*",
         "@hugeicons/core-free-icons": "^2.0.0",
