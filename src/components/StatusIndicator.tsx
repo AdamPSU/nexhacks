@@ -14,7 +14,7 @@ interface StatusIndicatorProps {
 }
 
 export function StatusIndicator({ status, errorMessage, customMessage }: StatusIndicatorProps) {
-  if (status === "idle") return null;
+  if (status === "idle" || status === "success") return null;
 
   const isError = status === "error";
   const isGenerating = status === "generating";

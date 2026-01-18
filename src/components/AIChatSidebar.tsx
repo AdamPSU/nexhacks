@@ -2,11 +2,10 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Sparkles, Loader2, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import { X, Send, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { VoiceStatus } from "@/hooks/useVoiceAgent";
 
 interface Message {
   id: string;
@@ -19,25 +18,9 @@ interface AIChatSidebarProps {
   onClose: () => void;
   onSubmit: (prompt: string) => Promise<{ success: boolean; textContent: string }>;
   status: "idle" | "generating" | "success" | "error";
-  voiceAgent: {
-    isSessionActive: boolean;
-    status: VoiceStatus;
-    statusDetail: string | null;
-    isMuted: boolean;
-    toggleSession: () => void;
-    toggleMute: () => void;
-  };
 }
 
-const voiceStatusMessages: Record<Exclude<VoiceStatus, "idle">, string> = {
-  connecting: "Connecting...",
-  listening: "Listening...",
-  thinking: "Thinking...",
-  callingTool: "Drawing...",
-  error: "Voice Error",
-};
-
-export function AIChatSidebar({ isOpen, onClose, onSubmit, status, voiceAgent }: AIChatSidebarProps) {
+export function AIChatSidebar({ isOpen, onClose, onSubmit, status }: AIChatSidebarProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -113,44 +96,10 @@ export function AIChatSidebar({ isOpen, onClose, onSubmit, status, voiceAgent }:
               <h2 className="font-semibold text-sm">AI Agent</h2>
             </div>
             
-            <div className="flex items-center gap-1">
-              {voiceAgent.isSessionActive && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={voiceAgent.toggleMute}
-                  className="h-8 w-8 rounded-full"
-                >
-                  {voiceAgent.isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-                </Button>
-              )}
-              <Button
-                variant={voiceAgent.isSessionActive ? "default" : "ghost"}
-                size="icon"
-                onClick={voiceAgent.toggleSession}
-                className={cn(
-                  "h-8 w-8 rounded-full",
-                  voiceAgent.isSessionActive && "bg-red-500 hover:bg-red-600 text-white"
-                )}
-                title={voiceAgent.isSessionActive ? "End Voice Session" : "Start Voice Session"}
-              >
-                {voiceAgent.isSessionActive ? <MicOff size={16} /> : <Mic size={16} />}
-              </Button>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full ml-1">
-                <X size={16} />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
+              <X size={16} />
+            </Button>
           </div>
-
-          {voiceAgent.status !== "idle" && (
-            <div className="px-4 py-2 bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-neutral-500">
-              <div className={cn(
-                "w-1.5 h-1.5 rounded-full animate-pulse",
-                voiceAgent.status === "error" ? "bg-red-500" : "bg-green-500"
-              )} />
-              {voiceAgent.statusDetail || voiceStatusMessages[voiceAgent.status as Exclude<VoiceStatus, "idle">]}
-            </div>
-          )}
 
           <div 
             ref={scrollRef}

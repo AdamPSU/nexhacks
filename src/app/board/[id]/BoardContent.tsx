@@ -8,8 +8,11 @@ import {
   Tick01Icon, 
   Cancel01Icon, 
   ArrowLeft01Icon,
-  SparklesIcon
+  SparklesIcon,
+  Mic02Icon,
+  MicOff02Icon
 } from "hugeicons-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
 import { useCanvasSolver } from "@/hooks/useCanvasSolver";
 import { useBoardSync } from "@/hooks/useBoardSync";
@@ -121,23 +124,55 @@ export function BoardContent({
         </div>
       )}
 
-      {!isVoiceSessionActive && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            left: '50%',
-            transform: 'translateX(-280px) translateX(-60%)',
-            zIndex: 1000,
-          }}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '72px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1000,
+        }}
+      >
+        <StatusIndicator
+          status={status}
+          errorMessage={errorMessage}
+          customMessage={statusMessage}
+        />
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '12px',
+          left: '50%',
+          transform: 'translateX(-253px) translateX(-50%)',
+          zIndex: 1000,
+          display: 'flex',
+          gap: '8px',
+        }}
+      >
+        {isVoiceSessionActive && (
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={voiceAgent.toggleMute}
+            className="h-10 w-10 rounded-xl shadow-md bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800"
+          >
+            {voiceAgent.isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+          </Button>
+        )}
+        <Button 
+          variant={isVoiceSessionActive ? "default" : "outline"}
+          onClick={voiceAgent.toggleSession}
+          className={cn(
+            "h-10 w-10 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all flex items-center justify-center",
+            isVoiceSessionActive ? "bg-red-500 text-white hover:bg-red-600" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
+          )}
+          title={isVoiceSessionActive ? "Stop Voice" : "Voice Mode"}
         >
-          <StatusIndicator
-            status={status}
-            errorMessage={errorMessage}
-            customMessage={statusMessage}
-          />
-        </div>
-      )}
+          {isVoiceSessionActive ? <MicOff02Icon size={18} /> : <Mic02Icon size={18} />}
+        </Button>
+      </div>
 
       <AIChatSidebar
         isOpen={isChatOpen}
@@ -150,7 +185,6 @@ export function BoardContent({
             force: true,
           });
         }}
-        voiceAgent={voiceAgent}
       />
 
       <ImageActionButtons
