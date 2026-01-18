@@ -10,7 +10,7 @@ export interface Layer {
 
 export function useLayers(editor: Editor | null) {
   const [layers, setLayers] = useState<Layer[]>([
-    { id: 'default', name: 'Background', isVisible: true, isLocked: false },
+    { id: 'default', name: 'Layer 1', isVisible: true, isLocked: false },
   ]);
   const [activeLayerId, setActiveLayerId] = useState<string>('default');
 
@@ -64,15 +64,26 @@ export function useLayers(editor: Editor | null) {
 
   const addLayer = useCallback(() => {
     const newId = `layer-${Date.now()}`;
+    
+    // Find the highest layer number to avoid duplicates
+    const layerNumbers = layers
+      .map(l => {
+        const match = l.name.match(/^Layer (\d+)$/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter(n => n > 0);
+    
+    const nextNumber = layerNumbers.length > 0 ? Math.max(...layerNumbers) + 1 : layers.length + 1;
+
     const newLayer: Layer = {
       id: newId,
-      name: `Layer ${layers.length + 1}`,
+      name: `Layer ${nextNumber}`,
       isVisible: true,
       isLocked: false,
     };
     setLayers((prev) => [...prev, newLayer]);
     setActiveLayerId(newId);
-  }, [layers.length]);
+  }, [layers]);
 
   const deleteLayer = useCallback((id: string) => {
     if (id === 'default' && layers.length === 1) return;
