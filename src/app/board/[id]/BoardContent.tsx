@@ -35,7 +35,7 @@ function ImageActionButtons({
     <div
       style={{
         position: 'absolute',
-        top: isVoiceSessionActive ? '56px' : '10px',
+        bottom: '72px',
         left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
@@ -43,13 +43,21 @@ function ImageActionButtons({
         gap: '8px',
       }}
     >
-      <Button variant="default" onClick={() => onAccept(currentImageId)}>
-        <Tick01Icon size={20} strokeWidth={2.5} />
-        <span className="ml-2">Accept</span>
+      <Button 
+        variant="outline" 
+        onClick={() => onReject(currentImageId)}
+        className="rounded-xl shadow-md h-9 bg-white dark:bg-neutral-900 border-neutral-200"
+      >
+        <Cancel01Icon size={18} strokeWidth={2.5} />
+        <span className="ml-2 font-medium">Reject</span>
       </Button>
-      <Button variant="secondary" onClick={() => onReject(currentImageId)}>
-        <Cancel01Icon size={20} strokeWidth={2.5} />
-        <span className="ml-2">Reject</span>
+      <Button 
+        variant="default" 
+        onClick={() => onAccept(currentImageId)}
+        className="rounded-xl shadow-md h-9"
+      >
+        <Tick01Icon size={18} strokeWidth={2.5} />
+        <span className="ml-2 font-medium">Accept</span>
       </Button>
     </div>
   );
