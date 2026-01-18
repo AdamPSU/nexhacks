@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic, useTransition } from 'react';
+import { useState, useOptimistic, useTransition, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Plus,
@@ -10,8 +10,15 @@ import {
   ArrowUpRight,
   Clock,
   FileIcon,
-  MoreHorizontal
+  MoreHorizontal,
+  LayoutGrid,
+  Settings,
+  Star,
+  Activity,
+  ChevronRight,
+  FolderOpen
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from "sonner";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +40,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { createWhiteboard, deleteWhiteboard, renameWhiteboard } from './actions';
 import { ConstellationBackground } from '@/components/ConstellationBackground';
+import { cn } from '@/lib/utils';
 
 type Whiteboard = {
   id: string;
@@ -46,6 +54,7 @@ export default function DashboardClient({ initialWhiteboards }: { initialWhitebo
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSidebarOpen] = useState(true);
   
   const [optimisticWhiteboards, addOptimisticWhiteboard] = useOptimistic(
     initialWhiteboards,
@@ -107,9 +116,10 @@ export default function DashboardClient({ initialWhiteboards }: { initialWhitebo
     });
   };
 
-  const filteredWhiteboards = optimisticWhiteboards.filter(board =>
-    board.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredWhiteboards = useMemo(() => 
+    optimisticWhiteboards.filter(board =>
+      board.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ), [optimisticWhiteboards, searchQuery]);
 
   const formatTime = (date: string) => {
     const d = new Date(date);
@@ -124,233 +134,270 @@ export default function DashboardClient({ initialWhiteboards }: { initialWhitebo
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-white relative">
-      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 1 }}>
-        <ConstellationBackground />
-      </div>
-      <main className="relative mx-auto max-w-6xl px-6 py-12 space-y-10" style={{ zIndex: 10 }}>
-        <section className="rounded-[32px] border border-neutral-200 dark:border-neutral-800 overflow-hidden">
-          <div className="bg-black text-white dark:bg-white dark:text-black px-8 py-10">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.35em] opacity-60">Dashboard</p>
-                <h1 className="text-4xl font-semibold tracking-tight">Canvas Control</h1>
-                <p className="text-sm opacity-70">Create, rename, and delete canvases in one place.</p>
+    <div className="flex h-screen bg-white text-neutral-900 dark:bg-black dark:text-white overflow-hidden selection:bg-neutral-200 dark:selection:bg-neutral-800">
+      <ConstellationBackground />
+      
+      {/* Sidebar */}
+      <motion.aside 
+        initial={false}
+        animate={{ width: isSidebarOpen ? 280 : 0, opacity: isSidebarOpen ? 1 : 0 }}
+        className="relative z-20 h-full border-r border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-black/80 backdrop-blur-xl overflow-hidden hidden lg:flex flex-col"
+      >
+        <div className="p-6 flex flex-col h-full">
+          <div className="flex items-center gap-3 mb-10 px-2">
+            <div className="w-8 h-8 bg-black dark:bg-white rounded-lg flex items-center justify-center">
+              <Star className="text-white dark:text-black" size={18} fill="currentColor" />
+            </div>
+            <span className="font-bold text-lg tracking-tight">Studio</span>
+          </div>
+
+          <nav className="flex-1 space-y-1">
+            <SidebarItem icon={<LayoutGrid size={18} />} label="All Canvases" active />
+            <SidebarItem icon={<Star size={18} />} label="Favorites" />
+            <SidebarItem icon={<Activity size={18} />} label="Recent" />
+            <div className="pt-6 pb-2 px-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 dark:text-neutral-500">Workspace</p>
+            </div>
+            <SidebarItem icon={<FolderOpen size={18} />} label="Personal" />
+            <SidebarItem icon={<Settings size={18} />} label="Settings" />
+          </nav>
+
+          <div className="mt-auto p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-900/50 border border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-800 flex items-center justify-center">
+                <Activity size={20} />
               </div>
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                <div className="relative w-full sm:w-72">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70 dark:text-black/70" />
-                  <Input
-                    type="text"
-                    placeholder="Search canvases"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-11 w-full rounded-full border border-white/20 bg-white/10 pl-9 text-sm text-white placeholder:text-white/50 focus-visible:ring-0 dark:border-black/20 dark:bg-black/10 dark:text-black dark:placeholder:text-black/40"
-                  />
-                </div>
-                <Button
-                  onClick={handleCreate}
-                  disabled={isPending}
-                  className="h-11 rounded-full bg-white text-black hover:bg-neutral-100 dark:bg-black dark:text-white dark:hover:bg-neutral-900"
-                >
-                  {isPending ? (
-                    <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black dark:border-white/20 dark:border-t-white" />
-                  ) : (
-                    <Plus className="mr-2 h-4 w-4" />
-                  )}
-                  New canvas
-                </Button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate">Guest User</p>
+                <p className="text-xs text-neutral-500 truncate">Free Plan</p>
               </div>
             </div>
           </div>
-          <div className="bg-white dark:bg-black px-8 py-6">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
-                <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-                  Total canvases
-                </p>
-                <p className="mt-3 text-3xl font-semibold">{optimisticWhiteboards.length}</p>
-              </div>
-              <div className="rounded-2xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
-                <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-                  Visible
-                </p>
-                <p className="mt-3 text-3xl font-semibold">{filteredWhiteboards.length}</p>
-              </div>
-              <div className="rounded-2xl border border-neutral-200 p-4 text-sm dark:border-neutral-800">
-                <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-                  Quick start
-                </p>
-                <Button
-                  onClick={handleCreate}
-                  disabled={isPending}
-                  className="mt-3 w-full rounded-full border border-neutral-200 bg-white text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-black dark:text-white dark:hover:bg-neutral-900"
-                >
-                  Create a blank board
-                </Button>
-              </div>
+        </div>
+      </motion.aside>
+
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col relative z-10 overflow-hidden">
+        {/* Top Header */}
+        <header className="h-20 flex items-center justify-between px-8 border-b border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-black/50 backdrop-blur-sm">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="relative w-full max-w-md group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-black dark:group-focus-within:text-white transition-colors" size={18} />
+              <Input
+                placeholder="Search projects..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-11 pl-10 bg-neutral-100/50 dark:bg-neutral-900/50 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-neutral-200 dark:focus-visible:ring-neutral-800 transition-all"
+              />
             </div>
           </div>
-        </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Canvases</h2>
-            <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-              {filteredWhiteboards.length} shown
-            </p>
-          </div>
-
-          {filteredWhiteboards.length === 0 && (
-            <div className="rounded-3xl border border-dashed border-neutral-300 p-10 text-center dark:border-neutral-700">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-900">
-                <Search className="h-6 w-6 text-neutral-400" />
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-6 mr-6 text-sm font-medium text-neutral-500">
+              <div className="flex flex-col items-end">
+                <span className="text-neutral-900 dark:text-white font-bold">{optimisticWhiteboards.length}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-60">Total</span>
               </div>
-              <h3 className="mt-4 text-lg font-semibold">No canvases yet</h3>
-              <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                Create your first canvas or clear the search term.
-              </p>
-              <Button
+              <div className="flex flex-col items-end">
+                <span className="text-neutral-900 dark:text-white font-bold">{filteredWhiteboards.length}</span>
+                <span className="text-[10px] uppercase tracking-wider opacity-60">Visible</span>
+              </div>
+            </div>
+            <Button
+              onClick={handleCreate}
+              disabled={isPending}
+              className="h-11 px-6 rounded-xl bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 font-bold shadow-xl shadow-black/5 dark:shadow-white/5 transition-all active:scale-95"
+            >
+              {isPending ? (
+                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              ) : (
+                <Plus className="mr-2 h-4 w-4" strokeWidth={3} />
+              )}
+              Create New
+            </Button>
+          </div>
+        </header>
+
+        {/* Grid Content */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8">
+          <div className="max-w-7xl mx-auto space-y-10">
+            {/* Featured Section */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div 
+                className="col-span-1 md:col-span-2 group relative h-48 rounded-[32px] overflow-hidden bg-black text-white dark:bg-white dark:text-black cursor-pointer shadow-2xl transition-transform active:scale-[0.98]"
                 onClick={handleCreate}
-                disabled={isPending}
-                className="mt-6 rounded-full bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Create canvas
-              </Button>
-            </div>
-          )}
-
-          {filteredWhiteboards.length > 0 && (
-            <div className="grid gap-4 lg:grid-cols-2">
-              <button
-                type="button"
-                onClick={handleCreate}
-                className="flex items-center gap-5 rounded-3xl border border-dashed border-neutral-300 p-5 text-left transition hover:border-neutral-500 dark:border-neutral-700 dark:hover:border-neutral-500 relative z-10 bg-white dark:bg-neutral-950"
-              >
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Plus className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
-                    New
-                  </p>
-                  <p className="mt-2 text-lg font-semibold">Create a fresh canvas</p>
-                </div>
-              </button>
-
-              {filteredWhiteboards.map((board) => (
-                <div
-                  key={board.id}
-                  className="group flex items-stretch gap-4 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 relative z-10"
-                >
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/board/${board.id}`)}
-                    className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-900"
-                  >
-                    {board.preview ? (
-                      <img
-                        src={board.preview}
-                        alt={board.title}
-                        className="h-full w-full rounded-2xl object-cover"
-                      />
-                    ) : (
-                      <FileIcon className="h-8 w-8 text-neutral-400" />
-                    )}
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-3">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="truncate text-lg font-semibold">{board.title}</h3>
-                        <div className="mt-2 flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span>{formatTime(board.updated_at)}</span>
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 rounded-full border border-transparent text-neutral-500 hover:border-neutral-200 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:border-neutral-800 dark:hover:bg-neutral-900"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            setRenameId(board.id);
-                            setRenameTitle(board.title);
-                          }}>
-                            <Edit2 className="mr-2 h-4 w-4" />
-                            Rename
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => handleDelete(board.id)}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button
-                        variant="outline"
-                        className="rounded-full border-neutral-200 dark:border-neutral-800"
-                        onClick={() => router.push(`/board/${board.id}`)}
-                      >
-                        Open canvas
-                        <ArrowUpRight className="ml-2 h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="rounded-full text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
-                        onClick={() => handleDelete(board.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none" />
+                <div className="relative h-full p-8 flex flex-col justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold tracking-tight mb-2">Start Fresh</h2>
+                    <p className="opacity-60 max-w-sm">Create a new canvas and let the AI assist your creative process instantly.</p>
+                  </div>
+                  <div className="flex items-center gap-2 font-bold text-sm">
+                    Launch Studio <ChevronRight size={16} strokeWidth={3} />
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
+                <div className="absolute top-1/2 right-10 -translate-y-1/2 opacity-10 group-hover:scale-110 group-hover:opacity-20 transition-all duration-500">
+                  <Star size={120} fill="currentColor" />
+                </div>
+              </div>
+
+              <div className="h-48 rounded-[32px] border border-neutral-200 dark:border-neutral-800 bg-white/50 dark:bg-black/50 backdrop-blur-sm p-8 flex flex-col justify-between">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 mb-1">Status</p>
+                  <h3 className="text-xl font-bold leading-tight text-neutral-900 dark:text-neutral-100">Live Workspace</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">All systems operational</span>
+                </div>
+              </div>
+            </section>
+
+            {/* List Section */}
+            <section className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold tracking-tight">Your Canvases</h2>
+                <div className="flex items-center gap-2 p-1 bg-neutral-100 dark:bg-neutral-900 rounded-lg">
+                  <button className="p-1.5 rounded-md bg-white dark:bg-black shadow-sm text-black dark:text-white"><LayoutGrid size={16} /></button>
+                  <button className="p-1.5 rounded-md text-neutral-400 hover:text-black dark:hover:text-white transition-colors"><MoreHorizontal size={16} /></button>
+                </div>
+              </div>
+
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <AnimatePresence mode="popLayout">
+                  {filteredWhiteboards.map((board) => (
+                    <motion.div
+                      layout
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      key={board.id}
+                      className="group flex flex-col rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden hover:shadow-2xl hover:shadow-black/5 dark:hover:shadow-white/5 transition-all"
+                    >
+                      <div 
+                        className="relative h-44 bg-neutral-50 dark:bg-neutral-900 cursor-pointer overflow-hidden"
+                        onClick={() => router.push(`/board/${board.id}`)}
+                      >
+                        {board.preview ? (
+                          <img
+                            src={board.preview}
+                            alt={board.title}
+                            className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <FileIcon className="text-neutral-300 dark:text-neutral-700" size={40} strokeWidth={1} />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors" />
+                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full bg-white/90 dark:bg-black/90 backdrop-blur shadow-lg border-none hover:scale-110 transition-transform">
+                                <MoreHorizontal size={14} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                              <DropdownMenuItem onClick={() => {
+                                setRenameId(board.id);
+                                setRenameTitle(board.title);
+                              }}>
+                                <Edit2 className="mr-2 h-4 w-4" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-red-500 focus:text-red-500"
+                                onClick={() => handleDelete(board.id)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      
+                      <div className="p-5">
+                        <div className="flex items-start justify-between gap-4 mb-4">
+                          <div className="min-w-0">
+                            <h3 className="font-bold truncate text-base leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{board.title}</h3>
+                            <div className="mt-1 flex items-center gap-2 text-xs text-neutral-400">
+                              <Clock size={12} />
+                              <span>{formatTime(board.updated_at)}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between h-9 rounded-xl border-neutral-200 dark:border-neutral-800 text-[10px] uppercase tracking-widest font-black hover:bg-neutral-50 dark:hover:bg-neutral-900 group/btn"
+                          onClick={() => router.push(`/board/${board.id}`)}
+                        >
+                          Open Canvas
+                          <ArrowUpRight className="text-neutral-400 group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" size={14} />
+                        </Button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
+
+              {filteredWhiteboards.length === 0 && (
+                <div className="h-64 flex flex-col items-center justify-center text-center p-10 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-[32px]">
+                  <div className="w-16 h-16 bg-neutral-50 dark:bg-neutral-900 rounded-full flex items-center justify-center mb-4">
+                    <Search className="text-neutral-300" size={24} />
+                  </div>
+                  <h3 className="text-xl font-bold">No results found</h3>
+                  <p className="text-sm text-neutral-500 mt-1 max-w-xs">Try a different keyword.</p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
       </main>
 
       <Dialog open={!!renameId} onOpenChange={(open) => !open && setRenameId(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-[24px]">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-semibold">Rename canvas</DialogTitle>
-            <DialogDescription>
-              Give your canvas a new name.
+            <DialogTitle className="text-2xl font-bold">Rename Canvas</DialogTitle>
+            <DialogDescription className="text-neutral-500">
+              Personalize your project with a new title.
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <Label htmlFor="name" className="mb-2 block text-sm">Canvas name</Label>
+          <div className="py-6">
+            <Label htmlFor="name" className="mb-2 block text-xs uppercase tracking-widest font-bold text-neutral-400">Project Title</Label>
             <Input
               id="name"
               value={renameTitle}
               onChange={(e) => setRenameTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+              className="h-12 bg-neutral-100 dark:bg-neutral-900 border-none rounded-xl focus-visible:ring-1 focus-visible:ring-black dark:focus-visible:ring-white"
               autoFocus
             />
           </div>
-          <DialogFooter className="flex gap-2">
-            <Button variant="outline" onClick={() => setRenameId(null)} className="flex-1">
-              Cancel
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setRenameId(null)} className="flex-1 rounded-xl">
+              Discard
             </Button>
-            <Button onClick={handleRename} disabled={isPending} className="flex-1 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
-              Save
+            <Button onClick={handleRename} disabled={isPending} className="flex-1 bg-black text-white dark:bg-white dark:text-black rounded-xl font-bold">
+              Update Title
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function SidebarItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+  return (
+    <div className={cn(
+      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all active:scale-[0.98]",
+      active 
+        ? "bg-black text-white dark:bg-white dark:text-black shadow-lg shadow-black/5 dark:shadow-white/5" 
+        : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-900 hover:text-neutral-900 dark:hover:text-white"
+    )}>
+      {icon}
+      <span className="flex-1">{label}</span>
     </div>
   );
 }
