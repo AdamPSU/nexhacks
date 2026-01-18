@@ -8,6 +8,7 @@ import {
 import { logger } from "@/lib/logger";
 import { useDebounceActivity } from "@/hooks/useDebounceActivity";
 import { StatusIndicatorState } from "@/components/StatusIndicator";
+import { removeWhiteBackground } from "@/utils/imageProcessing";
 
 export function useCanvasSolver(isVoiceSessionActive: boolean) {
   const editor = useEditor();
@@ -119,13 +120,16 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
 
         if (signal.aborted) return { success: false, textContent: "" };
 
+        // Process image to remove white background
+        const processedImageUrl = await removeWhiteBackground(imageUrl);
+
         const assetId = AssetRecordType.createId();
         const img = new Image();
         
         await new Promise((resolve, reject) => {
           img.onload = () => resolve(null);
           img.onerror = (e) => reject(new Error('Failed to load generated image'));
-          img.src = imageUrl;
+          img.src = processedImageUrl;
         });
 
         if (signal.aborted) return { success: false, textContent: "" };
@@ -139,7 +143,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
             typeName: 'asset',
             props: {
               name: 'generated-solution.png',
-              src: imageUrl,
+              src: processedImageUrl,
               w: img.width,
               h: img.height,
               mimeType: 'image/png',
@@ -162,7 +166,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           type: "image",
           x: viewportBounds.x + (viewportBounds.width - shapeWidth) / 2,
           y: viewportBounds.y + (viewportBounds.height - shapeHeight) / 2,
-          opacity: 0.3,
+          opacity: 1.0,
           isLocked: true,
           props: {
             w: shapeWidth,
