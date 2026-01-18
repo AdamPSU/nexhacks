@@ -192,6 +192,23 @@ export function useLayers(editor: Editor | null) {
     });
   }, [editor]);
 
+  const findOrCreateLayer = useCallback((layerName: string) => {
+    const existingLayer = layers.find(
+      (l) => l.name.toLowerCase() === layerName.toLowerCase()
+    );
+    if (existingLayer) return existingLayer.id;
+
+    const newId = `layer-${Date.now()}`;
+    const newLayer: Layer = {
+      id: newId,
+      name: layerName,
+      isVisible: true,
+      isLocked: false,
+    };
+    setLayers((prev) => [...prev, newLayer]);
+    return newId;
+  }, [layers]);
+
   return {
     layers,
     activeLayerId,
@@ -202,5 +219,6 @@ export function useLayers(editor: Editor | null) {
     toggleLock,
     renameLayer,
     moveLayer,
+    findOrCreateLayer,
   };
 }

@@ -81,19 +81,6 @@ export function BoardContent({
   const router = useRouter();
   const [isVoiceSessionActive, setIsVoiceSessionActive] = useState(false);
 
-  const {
-    pendingImageIds,
-    status,
-    errorMessage,
-    statusMessage,
-    isAIEnabled,
-    setIsAIEnabled,
-    generateSolution,
-    handleAccept,
-    handleReject,
-    isUpdatingImageRef,
-  } = useCanvasSolver(isVoiceSessionActive);
-
   const editor = useEditor();
   const {
     layers,
@@ -105,7 +92,21 @@ export function BoardContent({
     toggleLock,
     renameLayer,
     moveLayer,
+    findOrCreateLayer,
   } = useLayers(editor);
+
+  const {
+    pendingImageIds,
+    status,
+    errorMessage,
+    statusMessage,
+    isAIEnabled,
+    setIsAIEnabled,
+    generateSolution,
+    handleAccept,
+    handleReject,
+    isUpdatingImageRef,
+  } = useCanvasSolver(isVoiceSessionActive, findOrCreateLayer, activeLayerId);
 
   const voiceAgent = useVoiceAgent({
     onSessionChange: setIsVoiceSessionActive,

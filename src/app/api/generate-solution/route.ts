@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
 
     let textContent = "";
     let shouldDraw = true;
+    let targetLayer: string | null = null;
+    let actionPrompt: string | null = prompt;
 
     // --- STAGE 1: INTENT CLASSIFICATION (Only for Chat) ---
     if (source === 'chat' && prompt) {
@@ -73,40 +75,36 @@ export async function POST(req: NextRequest) {
       const intentData = JSON.parse(rawClassifierText);
       textContent = intentData.message || "";
       shouldDraw = intentData.intent?.toLowerCase() === "draw";
+      targetLayer = intentData.targetLayer || null;
+      actionPrompt = intentData.actionPrompt || prompt;
 
-      solutionLogger.info({ requestId, intent: intentData.intent, hasMessage: !!textContent, shouldDraw }, 'Classifier parsed intent');
+      solutionLogger.info({ requestId, intent: intentData.intent, hasMessage: !!textContent, shouldDraw, targetLayer, actionPrompt }, 'Classifier parsed intent');
       
       if (!shouldDraw) {
         return NextResponse.json({
           success: true,
           imageUrl: null,
           textContent: textContent,
+          targetLayer: targetLayer,
         });
       }
     }
 
     // --- STAGE 2: ARTIST DELEGATION ---
-    // If we need to draw but have no canvas snapshot, we can't proceed (artist needs context)
-    if (shouldDraw && (!base64Data || !mimeType)) {
-      return NextResponse.json({
-        success: false,
-        imageUrl: null,
-        textContent: textContent || "I'd love to help you draw that, but I need to see the canvas first. Try drawing a quick sketch!",
-        reason: 'No canvas image provided for drawing intent.'
-      });
-    }
-
     const artistPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'artist.txt'), 'utf8');
-    const fullPrompt = prompt 
-      ? `${artistPrompt}\n\nUSER INPUT: "${prompt}"`
+    const fullArtistPrompt = actionPrompt 
+      ? `${artistPrompt}\n\nUSER INPUT: "${actionPrompt}"`
       : artistPrompt;
 
     const artistParts: any[] = [
-      { text: fullPrompt },
+      { text: fullArtistPrompt },
     ];
 
     if (base64Data && mimeType) {
       artistParts.push({ inlineData: { data: base64Data, mimeType } }); // Canvas snapshot
+    } else {
+      // Provide a "blank slate" context if no image is present to allow generation on empty board
+      artistParts.push({ text: "The canvas is currently empty. Please generate the requested art from scratch on a pure white background." });
     }
 
     // Add reference images to the artist's context
@@ -114,42 +112,54 @@ export async function POST(req: NextRequest) {
       artistParts.push({ inlineData: img });
     });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-image-preview',
-      contents: [
-        {
-          role: 'user',
-          parts: artistParts,
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-pro-image-preview',
+        contents: [
+          {
+            role: 'user',
+            parts: artistParts,
+          },
+        ],
+        config: {
+          responseModalities: ['TEXT', 'IMAGE'],
         },
-      ],
-      config: {
-        responseModalities: ['TEXT', 'IMAGE'],
-      },
-    });
+      });
 
-    // CRITICAL: We use textContent from Stage 1 (the classifier) if it exists,
-    // ensuring the user sees the conversational response immediately.
-    const finalContent = textContent || response.text;
-    
-    let imageUrl = null;
-    const candidates = response.candidates;
-    if (candidates?.[0]?.content?.parts) {
-      for (const part of candidates[0].content.parts) {
-        if (part.inlineData) {
-          imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-          break;
+      // CRITICAL: We use textContent from Stage 1 (the classifier) if it exists,
+      // ensuring the user sees the conversational response immediately.
+      const finalContent = textContent || response.text;
+      
+      let imageUrl = null;
+      const candidates = response.candidates;
+      if (candidates?.[0]?.content?.parts) {
+        for (const part of candidates[0].content.parts) {
+          if (part.inlineData) {
+            imageUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+            break;
+          }
         }
       }
+
+      solutionLogger.info({ requestId, hasImage: !!imageUrl }, 'Solution generated via native SDK');
+
+      return NextResponse.json({
+        success: !!imageUrl,
+        imageUrl: imageUrl || null,
+        textContent: finalContent || '',
+        reason: imageUrl ? undefined : 'Model did not return an image completion.',
+        targetLayer: targetLayer,
+      });
+    } catch (err) {
+      solutionLogger.error({ requestId, err }, 'Artist stage error');
+      return NextResponse.json({
+        success: false,
+        imageUrl: null,
+        textContent: textContent || "I encountered an error while trying to draw that. Please try again!",
+        reason: 'Artist model failed.',
+        targetLayer: targetLayer,
+      });
     }
-
-    solutionLogger.info({ requestId, hasImage: !!imageUrl }, 'Solution generated via native SDK');
-
-    return NextResponse.json({
-      success: !!imageUrl,
-      imageUrl: imageUrl || null,
-      textContent: finalContent || '',
-      reason: imageUrl ? undefined : 'Model did not return an image completion.',
-    });
   } catch (error) {
     solutionLogger.error({ requestId, err: error }, 'Generation error');
     return NextResponse.json({ error: 'Failed to generate solution' }, { status: 500 });

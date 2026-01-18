@@ -10,7 +10,11 @@ import { useDebounceActivity } from "@/hooks/useDebounceActivity";
 import { StatusIndicatorState } from "@/components/StatusIndicator";
 import { removeWhiteBackground } from "@/utils/imageProcessing";
 
-export function useCanvasSolver(isVoiceSessionActive: boolean) {
+export function useCanvasSolver(
+  isVoiceSessionActive: boolean,
+  findOrCreateLayer?: (name: string) => string,
+  activeLayerId?: string
+) {
   const editor = useEditor();
   const [pendingImageIds, setPendingImageIds] = useState<TLShapeId[]>([]);
   const [status, setStatus] = useState<StatusIndicatorState>("idle");
@@ -114,11 +118,13 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         const solutionData = await solutionResponse.json();
         const imageUrl = solutionData.imageUrl as string | null | undefined;
         const textContent = solutionData.textContent || '';
+        const targetLayerName = solutionData.targetLayer as string | null | undefined;
 
         logger.info({ 
           hasImageUrl: !!imageUrl, 
           imageUrlLength: imageUrl?.length,
-          textContent: textContent
+          textContent: textContent,
+          targetLayerName
         }, 'Solution data received');
 
         if (!imageUrl || signal.aborted) {
@@ -172,6 +178,12 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         const shapeWidth = img.width * scale;
         const shapeHeight = img.height * scale;
 
+        // Resolve target layer
+        let destinationLayerId = activeLayerId;
+        if (targetLayerName && findOrCreateLayer) {
+          destinationLayerId = findOrCreateLayer(targetLayerName);
+        }
+
         editor.createShape({
           id: shapeId,
           type: "image",
@@ -183,6 +195,9 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
             w: shapeWidth,
             h: shapeHeight,
             assetId: assetId,
+          },
+          meta: {
+            layerId: destinationLayerId,
           },
         });
 
@@ -223,7 +238,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         abortControllerRef.current = null;
       }
     },
-    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage, isAIEnabled],
+    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage, isAIEnabled, findOrCreateLayer, activeLayerId],
   );
 
   const handleAutoGeneration = useCallback(() => {
