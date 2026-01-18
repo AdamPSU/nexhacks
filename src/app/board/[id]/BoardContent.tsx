@@ -114,11 +114,21 @@ export function BoardContent({
       )}
 
       {!isVoiceSessionActive && (
-        <StatusIndicator
-          status={status}
-          errorMessage={errorMessage}
-          customMessage={statusMessage}
-        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '14px',
+            left: '50%',
+            transform: 'translateX(-272 px) translateX(-67%)',
+            zIndex: 1000,
+          }}
+        >
+          <StatusIndicator
+            status={status}
+            errorMessage={errorMessage}
+            customMessage={statusMessage}
+          />
+        </div>
       )}
 
       <AIChatSidebar
@@ -145,7 +155,7 @@ export function BoardContent({
       <div
         style={{
           position: 'absolute',
-          bottom: '10px',
+          bottom: '12px',
           left: '50%',
           transform: 'translateX(280px) translateX(-40%)',
           zIndex: 1000,

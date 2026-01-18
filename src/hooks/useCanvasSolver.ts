@@ -25,7 +25,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
     if (statusType === "generating") {
       return "Thinking...";
     } else if (statusType === "success") {
-      return "Autocomplete generated";
+      return "Success!";
     }
     return "";
   }, []);
