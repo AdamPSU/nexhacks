@@ -48,6 +48,18 @@ export function useDebounceActivity(
       if (isProcessingRef?.current) {
         return;
       }
+
+      // Ignore changes made with the eraser tool
+      // We check for 'eraser' and potentially other non-drawing tools if needed
+      try {
+        const currentToolId = editor.getCurrentToolId();
+        // Only block if explicitly the eraser. All other tools (draw, arrow, etc.) should pass.
+        if (currentToolId === 'eraser') {
+          return;
+        }
+      } catch (e) {
+        // Safe fallback if API changes - proceed with timer if we can't determine tool
+      }
       
       resetTimer();
     };

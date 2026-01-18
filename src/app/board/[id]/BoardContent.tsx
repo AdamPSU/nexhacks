@@ -119,6 +119,20 @@ export function BoardContent({
 
   useBoardSync(id, isUpdatingImageRef);
 
+  // Helper to suppress AI triggering during layer operations
+  const wrapLayerAction = <T extends (...args: any[]) => any>(action: T) => {
+    return (...args: Parameters<T>) => {
+      isUpdatingImageRef.current = true;
+      try {
+        action(...args);
+      } finally {
+        setTimeout(() => {
+          isUpdatingImageRef.current = false;
+        }, 500);
+      }
+    };
+  };
+
   return (
     <>
       {!isVoiceSessionActive && (
@@ -260,13 +274,13 @@ export function BoardContent({
       <LayerPanel
         layers={layers}
         activeLayerId={activeLayerId}
-        onSetActiveLayer={setActiveLayerId}
-        onAddLayer={addLayer}
-        onDeleteLayer={deleteLayer}
-        onToggleVisibility={toggleVisibility}
-        onToggleLock={toggleLock}
-        onRenameLayer={renameLayer}
-        onMoveLayer={moveLayer}
+        onSetActiveLayer={wrapLayerAction(setActiveLayerId)}
+        onAddLayer={wrapLayerAction(addLayer)}
+        onDeleteLayer={wrapLayerAction(deleteLayer)}
+        onToggleVisibility={wrapLayerAction(toggleVisibility)}
+        onToggleLock={wrapLayerAction(toggleLock)}
+        onRenameLayer={wrapLayerAction(renameLayer)}
+        onMoveLayer={wrapLayerAction(moveLayer)}
       />
     </>
   );
