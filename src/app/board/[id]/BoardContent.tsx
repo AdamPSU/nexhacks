@@ -125,9 +125,9 @@ export function BoardContent({
         <div
           style={{
             position: 'absolute',
-            bottom: '14px',
+            bottom: '12px',
             left: '50%',
-            transform: 'translateX(-272 px) translateX(-67%)',
+            transform: 'translateX(-280px) translateX(-60%)',
             zIndex: 1000,
           }}
         >

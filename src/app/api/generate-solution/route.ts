@@ -27,35 +27,29 @@ export async function POST(req: NextRequest) {
 
     // --- STAGE 1: INTENT CLASSIFICATION (Only for Chat) ---
     if (source === 'chat' && prompt) {
-      try {
-        const classifierPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'classifier.txt'), 'utf8');
-        
-        const result = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
-          contents: [{
-            role: "user",
-            parts: [{ text: `${classifierPrompt}\n\nUSER INPUT: "${prompt}"` }]
-          }],
-          config: {
-            responseMimeType: "application/json"
-          }
-        });
-        
-        const intentData = JSON.parse(result.text || "{}");
-        textContent = intentData.message || "";
-        // Match lowercase 'draw' from prompts/classifier.txt
-        shouldDraw = intentData.intent?.toLowerCase() === "draw";
-        
-        if (!shouldDraw) {
-          return NextResponse.json({
-            success: true,
-            imageUrl: null,
-            textContent: textContent,
-          });
+      const classifierPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'classifier.txt'), 'utf8');
+      
+      const result = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{
+          role: "user",
+          parts: [{ text: `${classifierPrompt}\n\nUSER INPUT: "${prompt}"` }]
+        }],
+        config: {
+          responseMimeType: "application/json"
         }
-      } catch (e) {
-        solutionLogger.error({ requestId, err: e }, 'Intent classification failed, defaulting to DRAW');
-        shouldDraw = true; 
+      });
+      
+      const intentData = JSON.parse(result.text || "{}");
+      textContent = intentData.message || "";
+      shouldDraw = intentData.intent?.toLowerCase() === "draw";
+      
+      if (!shouldDraw) {
+        return NextResponse.json({
+          success: true,
+          imageUrl: null,
+          textContent: textContent,
+        });
       }
     }
 
