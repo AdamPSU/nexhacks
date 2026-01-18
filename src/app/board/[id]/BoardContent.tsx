@@ -131,6 +131,10 @@ export function BoardContent({
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '8px',
         }}
       >
         <StatusIndicator
@@ -138,6 +142,17 @@ export function BoardContent({
           errorMessage={errorMessage}
           customMessage={statusMessage}
         />
+        {voiceAgent.status !== "idle" && (
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-4 py-2 rounded-xl shadow-md flex items-center gap-3 animate-in fade-in slide-in-from-bottom-2">
+            <div className={cn(
+              "w-2 h-2 rounded-full",
+              voiceAgent.status === "recording" ? "bg-red-500 animate-pulse" : "bg-blue-500 animate-pulse"
+            )} />
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              {voiceAgent.statusDetail || voiceAgent.status}
+            </span>
+          </div>
+        )}
       </div>
 
       <div
@@ -162,15 +177,23 @@ export function BoardContent({
           </Button>
         )}
         <Button 
-          variant={isVoiceSessionActive ? "default" : "outline"}
+          variant={voiceAgent.status === "recording" ? "default" : "outline"}
           onClick={voiceAgent.toggleSession}
+          disabled={voiceAgent.status !== "idle" && voiceAgent.status !== "recording" && voiceAgent.status !== "error"}
           className={cn(
             "h-10 w-10 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all flex items-center justify-center",
-            isVoiceSessionActive ? "bg-red-500 text-white hover:bg-red-600" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
+            voiceAgent.status === "recording" ? "bg-red-500 text-white hover:bg-red-600 shadow-red-200" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
           )}
-          title={isVoiceSessionActive ? "Stop Voice" : "Voice Mode"}
+          title={voiceAgent.status === "recording" ? "Stop Recording" : "Voice Command"}
         >
-          {isVoiceSessionActive ? <MicOff02Icon size={18} /> : <Mic02Icon size={18} />}
+          {voiceAgent.status === "recording" ? (
+            <div className="relative flex items-center justify-center">
+              <MicOff02Icon size={18} />
+              <span className="absolute inset-0 rounded-full bg-white/20 animate-ping" />
+            </div>
+          ) : (
+            <Mic02Icon size={18} />
+          )}
         </Button>
       </div>
 
