@@ -36,6 +36,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
       promptOverride?: string;
       force?: boolean;
       source?: "auto" | "voice" | "chat";
+      images?: File[];
     }): Promise<{ success: boolean; textContent: string }> => {
       if (
         !editor ||
@@ -84,6 +85,11 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         formData.append("image", blob, "canvas.jpg");
         if (options?.promptOverride) {
           formData.append("prompt", options.promptOverride);
+        }
+        if (options?.images && options.images.length > 0) {
+          options.images.forEach((file, index) => {
+            formData.append(`reference_${index}`, file);
+          });
         }
         formData.append("source", options?.source ?? "auto");
 

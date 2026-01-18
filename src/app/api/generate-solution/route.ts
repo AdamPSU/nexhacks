@@ -16,6 +16,18 @@ export async function POST(req: NextRequest) {
     const prompt = formData.get('prompt') as string | null;
     const source = formData.get('source') as string | null;
 
+    // Collect reference images
+    const referenceImages: { data: string; mimeType: string }[] = [];
+    for (const [key, value] of formData.entries()) {
+      if (key.startsWith('reference_') && value instanceof File) {
+        const buffer = Buffer.from(await value.arrayBuffer());
+        referenceImages.push({
+          data: buffer.toString('base64'),
+          mimeType: value.type || 'image/jpeg'
+        });
+      }
+    }
+
     if (!imageFile) return NextResponse.json({ error: 'No image provided' }, { status: 400 });
 
     const buffer = Buffer.from(await imageFile.arrayBuffer());
@@ -29,11 +41,18 @@ export async function POST(req: NextRequest) {
     if (source === 'chat' && prompt) {
       const classifierPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'classifier.txt'), 'utf8');
       
+      const classifierParts: any[] = [{ text: `${classifierPrompt}\n\nUSER INPUT: "${prompt}"` }];
+      
+      // Include reference images in classification for better context
+      referenceImages.forEach(img => {
+        classifierParts.push({ inlineData: img });
+      });
+
       const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [{
           role: "user",
-          parts: [{ text: `${classifierPrompt}\n\nUSER INPUT: "${prompt}"` }]
+          parts: classifierParts
         }],
         config: {
           responseMimeType: "application/json"
@@ -59,15 +78,22 @@ export async function POST(req: NextRequest) {
       ? `${artistPrompt}\n\nUSER INPUT: "${prompt}"`
       : artistPrompt;
 
+    const artistParts: any[] = [
+      { text: fullPrompt },
+      { inlineData: { data: base64Data, mimeType } } // Canvas snapshot
+    ];
+
+    // Add reference images to the artist's context
+    referenceImages.forEach(img => {
+      artistParts.push({ inlineData: img });
+    });
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
       contents: [
         {
           role: 'user',
-          parts: [
-            { text: fullPrompt },
-            { inlineData: { data: base64Data, mimeType } }
-          ],
+          parts: artistParts,
         },
       ],
       config: {

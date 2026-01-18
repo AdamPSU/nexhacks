@@ -201,9 +201,10 @@ export function BoardContent({
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}
         status={status}
-        onSubmit={async (prompt) => {
+        onSubmit={async (prompt, images) => {
           return await generateSolution({
             promptOverride: prompt,
+            images,
             source: "chat",
             force: true,
           });
