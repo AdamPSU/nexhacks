@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { createWhiteboard, deleteWhiteboard, renameWhiteboard } from './actions';
+import { ConstellationBackground } from '@/components/ConstellationBackground';
 
 type Whiteboard = {
   id: string;
@@ -123,8 +124,11 @@ export default function DashboardClient({ initialWhiteboards }: { initialWhitebo
   };
 
   return (
-    <div className="min-h-screen bg-white text-neutral-900 dark:bg-black dark:text-white">
-      <main className="mx-auto max-w-6xl px-6 py-12 space-y-10">
+    <div className="min-h-screen bg-white dark:bg-black text-neutral-900 dark:text-white relative">
+      <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 1 }}>
+        <ConstellationBackground />
+      </div>
+      <main className="relative mx-auto max-w-6xl px-6 py-12 space-y-10" style={{ zIndex: 10 }}>
         <section className="rounded-[32px] border border-neutral-200 dark:border-neutral-800 overflow-hidden">
           <div className="bg-black text-white dark:bg-white dark:text-black px-8 py-10">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -222,23 +226,23 @@ export default function DashboardClient({ initialWhiteboards }: { initialWhitebo
               <button
                 type="button"
                 onClick={handleCreate}
-                className="flex items-center justify-between rounded-3xl border border-dashed border-neutral-300 p-5 text-left transition hover:border-neutral-500 dark:border-neutral-700 dark:hover:border-neutral-500"
+                className="flex items-center gap-5 rounded-3xl border border-dashed border-neutral-300 p-5 text-left transition hover:border-neutral-500 dark:border-neutral-700 dark:hover:border-neutral-500 relative z-10 bg-white dark:bg-neutral-950"
               >
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-900">
+                  <Plus className="h-5 w-5" />
+                </div>
                 <div>
                   <p className="text-xs uppercase tracking-[0.3em] text-neutral-500 dark:text-neutral-400">
                     New
                   </p>
                   <p className="mt-2 text-lg font-semibold">Create a fresh canvas</p>
                 </div>
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-900">
-                  <Plus className="h-5 w-5" />
-                </div>
               </button>
 
               {filteredWhiteboards.map((board) => (
                 <div
                   key={board.id}
-                  className="group flex items-stretch gap-4 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950"
+                  className="group flex items-stretch gap-4 rounded-3xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-400 dark:border-neutral-800 dark:bg-neutral-950 relative z-10"
                 >
                   <button
                     type="button"
