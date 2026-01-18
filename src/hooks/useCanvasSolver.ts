@@ -187,7 +187,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
           return { success: false, textContent: "" };
         }
         
-        logger.error({ error }, 'Auto-generation error');
+        logger.error(error, 'Auto-generation error');
         setErrorMessage(error instanceof Error ? error.message : 'Generation failed');
         setStatus("error");
         setStatusMessage("");

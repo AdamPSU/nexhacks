@@ -27,14 +27,14 @@ export async function POST(req: NextRequest) {
 
     // --- STAGE 1: INTENT CLASSIFICATION (Only for Chat) ---
     if (source === 'chat' && prompt) {
-      const chatDecisionPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'chat_decision.txt'), 'utf8');
-      
       try {
+        const classifierPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'classifier.txt'), 'utf8');
+        
         const result = await ai.models.generateContent({
-          model: "gemini-1.5-flash",
+          model: "gemini-3-flash-preview",
           contents: [{
             role: "user",
-            parts: [{ text: `${chatDecisionPrompt}\n\nUSER INPUT: "${prompt}"` }]
+            parts: [{ text: `${classifierPrompt}\n\nUSER INPUT: "${prompt}"` }]
           }],
           config: {
             responseMimeType: "application/json"
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
         
         const intentData = JSON.parse(result.text || "{}");
         textContent = intentData.message || "";
-        shouldDraw = intentData.intent === "DRAW";
+        // Match lowercase 'draw' from prompts/classifier.txt
+        shouldDraw = intentData.intent?.toLowerCase() === "draw";
         
         if (!shouldDraw) {
           return NextResponse.json({
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
           });
         }
       } catch (e) {
-        solutionLogger.error({ requestId, error: String(e) }, 'Intent classification failed, defaulting to DRAW');
+        solutionLogger.error({ requestId, err: e }, 'Intent classification failed, defaulting to DRAW');
         shouldDraw = true; 
       }
     }
@@ -80,7 +81,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const finalContent = response.text || textContent;
+    // Use textContent from Stage 1 if available (chat source), 
+    // otherwise fallback to artist response (auto/voice sources)
+    const finalContent = textContent || response.text;
     
     let imageUrl = null;
     const candidates = response.candidates;
@@ -102,7 +105,7 @@ export async function POST(req: NextRequest) {
       reason: imageUrl ? undefined : 'Model did not return an image completion.',
     });
   } catch (error) {
-    solutionLogger.error({ requestId, error: String(error) }, 'Generation error');
+    solutionLogger.error({ requestId, err: error }, 'Generation error');
     return NextResponse.json({ error: 'Failed to generate solution' }, { status: 500 });
   }
 }
