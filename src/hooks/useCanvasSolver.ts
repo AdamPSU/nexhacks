@@ -15,6 +15,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
   const [status, setStatus] = useState<StatusIndicatorState>("idle");
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [isAIEnabled, setIsAIEnabled] = useState<boolean>(true);
   
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -40,6 +41,10 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         isProcessingRef.current ||
         (isVoiceSessionActive && options?.source !== "voice")
       ) {
+        return { success: false, textContent: "" };
+      }
+
+      if (!isAIEnabled && options?.source === "auto") {
         return { success: false, textContent: "" };
       }
 
@@ -263,6 +268,8 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
     status,
     errorMessage,
     statusMessage,
+    isAIEnabled,
+    setIsAIEnabled,
     generateSolution,
     handleAccept,
     handleReject,

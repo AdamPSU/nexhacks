@@ -7,27 +7,26 @@ import { Button } from "@/components/ui/button";
 import { 
   Tick01Icon, 
   Cancel01Icon, 
-  ArrowLeft01Icon 
+  ArrowLeft01Icon,
+  SparklesIcon
 } from "hugeicons-react";
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
 import { useCanvasSolver } from "@/hooks/useCanvasSolver";
 import { useBoardSync } from "@/hooks/useBoardSync";
-import { VoiceControls } from "@/components/VoiceControls";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
+import { cn } from "@/lib/utils";
 
 function ImageActionButtons({
   pendingImageIds,
   onAccept,
   onReject,
   isVoiceSessionActive,
-  isChatOpen,
 }: {
   pendingImageIds: TLShapeId[];
   onAccept: (shapeId: TLShapeId) => void;
   onReject: (shapeId: TLShapeId) => void;
   isVoiceSessionActive: boolean;
-  isChatOpen: boolean;
 }) {
   if (pendingImageIds.length === 0) return null;
   const currentImageId = pendingImageIds[pendingImageIds.length - 1];
@@ -37,12 +36,11 @@ function ImageActionButtons({
       style={{
         position: 'absolute',
         top: isVoiceSessionActive ? '56px' : '10px',
-        left: isChatOpen ? 'calc(50% + 175px)' : '50%',
+        left: '50%',
         transform: 'translateX(-50%)',
         zIndex: 1000,
         display: 'flex',
         gap: '8px',
-        transition: 'left 0.3s ease-in-out'
       }}
     >
       <Button variant="default" onClick={() => onAccept(currentImageId)}>
@@ -57,27 +55,25 @@ function ImageActionButtons({
   );
 }
 
-export function BoardContent({ id }: { id: string }) {
+export function BoardContent({ 
+  id, 
+  isChatOpen, 
+  setIsChatOpen 
+}: { 
+  id: string; 
+  isChatOpen: boolean; 
+  setIsChatOpen: (open: boolean) => void; 
+}) {
   const router = useRouter();
   const [isVoiceSessionActive, setIsVoiceSessionActive] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") {
-        e.preventDefault();
-        setIsChatOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const {
     pendingImageIds,
     status,
     errorMessage,
     statusMessage,
+    isAIEnabled,
+    setIsAIEnabled,
     generateSolution,
     handleAccept,
     handleReject,
@@ -104,12 +100,11 @@ export function BoardContent({ id }: { id: string }) {
           style={{
             position: 'absolute',
             top: '16px',
-            left: isChatOpen ? '366px' : '16px',
+            left: '16px',
             zIndex: 1000,
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            transition: 'left 0.3s ease-in-out'
           }}
         >
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
@@ -137,6 +132,7 @@ export function BoardContent({ id }: { id: string }) {
             force: true,
           });
         }}
+        voiceAgent={voiceAgent}
       />
 
       <ImageActionButtons
@@ -144,17 +140,31 @@ export function BoardContent({ id }: { id: string }) {
         isVoiceSessionActive={isVoiceSessionActive}
         onAccept={handleAccept}
         onReject={handleReject}
-        isChatOpen={isChatOpen}
       />
 
-      <VoiceControls
-        isSessionActive={voiceAgent.isSessionActive}
-        status={voiceAgent.status}
-        statusDetail={voiceAgent.statusDetail}
-        isMuted={voiceAgent.isMuted}
-        onToggleSession={voiceAgent.toggleSession}
-        onToggleMute={voiceAgent.toggleMute}
-      />
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '10px',
+          left: '50%',
+          transform: 'translateX(280px) translateX(-40%)',
+          zIndex: 1000,
+        }}
+      >
+        <Button 
+          variant={isAIEnabled ? "default" : "outline"}
+          onClick={() => setIsAIEnabled(!isAIEnabled)}
+          className={cn(
+            "h-10 px-4 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all gap-2",
+            isAIEnabled ? "bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
+          )}
+        >
+          <SparklesIcon size={18} fill={isAIEnabled ? "currentColor" : "none"} />
+          <span className="text-sm font-medium">
+            {isAIEnabled ? "AI Enabled" : "Enable AI"}
+          </span>
+        </Button>
+      </div>
     </>
   );
 }

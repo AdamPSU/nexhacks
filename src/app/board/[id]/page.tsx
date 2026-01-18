@@ -57,6 +57,18 @@ export default function BoardPage() {
   const id = params.id as string;
   const [loading, setLoading] = useState(true);
   const [initialData, setInitialData] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "l") {
+        e.preventDefault();
+        setIsChatOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   useEffect(() => {
     async function loadBoard() {
@@ -94,7 +106,14 @@ export default function BoardPage() {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0 }}>
+    <div 
+      style={{ 
+        position: "fixed", 
+        inset: 0,
+        paddingLeft: isChatOpen ? '350px' : '0px',
+        transition: 'padding-left 0.3s ease-in-out'
+      }}
+    >
       <Tldraw
         overrides={hugeIconsOverrides}
         components={{
@@ -112,7 +131,7 @@ export default function BoardPage() {
           }
         }}
       >
-        <BoardContent id={id} />
+        <BoardContent id={id} isChatOpen={isChatOpen} setIsChatOpen={setIsChatOpen} />
       </Tldraw>
     </div>
   );

@@ -81,8 +81,8 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Use textContent from Stage 1 if available (chat source), 
-    // otherwise fallback to artist response (auto/voice sources)
+    // CRITICAL: We use textContent from Stage 1 (the classifier) if it exists,
+    // ensuring the user sees the conversational response immediately.
     const finalContent = textContent || response.text;
     
     let imageUrl = null;
