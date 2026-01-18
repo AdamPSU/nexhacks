@@ -50,8 +50,8 @@ export function useLayers(editor: Editor | null) {
           const activeLayer = layers.find(l => l.id === activeLayerId);
           return {
             ...shape,
-            opacity: activeLayer?.isVisible === false ? 0 : 1,
-            isLocked: activeLayer?.isLocked || false,
+            opacity: activeLayer?.isVisible === false ? 0 : shape.opacity,
+            isLocked: activeLayer?.isLocked ? true : shape.isLocked,
             meta: {
               ...shape.meta,
               layerId: activeLayerId,
@@ -91,6 +91,8 @@ export function useLayers(editor: Editor | null) {
     ).map(s => s.id);
     
     if (shapesToDelete.length > 0) {
+      // Ensure shapes are unlocked before deletion
+      editor.updateShapes(shapesToDelete.map(shapeId => ({ id: shapeId, isLocked: false })));
       editor.deleteShapes(shapesToDelete);
     }
   }, [activeLayerId, editor, layers.length]);
