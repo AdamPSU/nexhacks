@@ -93,6 +93,8 @@ export function BoardContent({
     renameLayer,
     moveLayer,
     findOrCreateLayer,
+    assignShapeToLayer,
+    getLayerIdForShape,
   } = useLayers(editor);
 
   const {
@@ -106,7 +108,14 @@ export function BoardContent({
     handleAccept,
     handleReject,
     isUpdatingImageRef,
-  } = useCanvasSolver(isVoiceSessionActive, findOrCreateLayer, activeLayerId);
+  } = useCanvasSolver(
+    isVoiceSessionActive,
+    findOrCreateLayer,
+    activeLayerId,
+    layers,
+    assignShapeToLayer,
+    getLayerIdForShape
+  );
 
   const voiceAgent = useVoiceAgent({
     onSessionChange: setIsVoiceSessionActive,

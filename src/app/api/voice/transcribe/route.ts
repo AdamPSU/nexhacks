@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { voiceLogger } from '@/lib/logger';
 
 /**
- * Proxy route for Wispr Flow AI transcription.
+ * Proxy route for OpenAI Whisper transcription.
  * Accepts a WAV file in FormData.
  */
 export async function POST(req: NextRequest) {
@@ -16,30 +16,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
     }
 
-    if (!process.env.WISPR_FLOW_API_KEY) {
-      voiceLogger.error('WISPR_FLOW_API_KEY not configured');
-      return NextResponse.json({ error: 'Wispr Flow API key not configured' }, { status: 500 });
+    if (!process.env.OPENAI_API_KEY) {
+      voiceLogger.error('OPENAI_API_KEY not configured');
+      return NextResponse.json({ error: 'OpenAI API key not configured' }, { status: 500 });
     }
 
-    // Convert blob to base64 as Wispr Flow REST API expects base64
-    const arrayBuffer = await audioFile.arrayBuffer();
-    const base64Audio = Buffer.from(arrayBuffer).toString('base64');
+    // OpenAI Whisper API expects a file, usually as multipart/form-data
+    const whisperFormData = new FormData();
+    whisperFormData.append('file', audioFile, 'audio.wav');
+    whisperFormData.append('model', 'whisper-1');
 
-    const response = await fetch('https://api.wisprflow.ai/api', {
+    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.WISPR_FLOW_API_KEY}`,
-        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
       },
-      body: JSON.stringify({
-        audio: base64Audio,
-        // Optional context or language can be added here
-      }),
+      body: whisperFormData,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      voiceLogger.error({ status: response.status, error: errorText }, 'Wispr Flow API error');
+      voiceLogger.error({ status: response.status, error: errorText }, 'OpenAI Whisper API error');
       return NextResponse.json({ error: 'Transcription failed' }, { status: response.status });
     }
 

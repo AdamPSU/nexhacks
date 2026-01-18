@@ -9,11 +9,15 @@ import { logger } from "@/lib/logger";
 import { useDebounceActivity } from "@/hooks/useDebounceActivity";
 import { StatusIndicatorState } from "@/components/StatusIndicator";
 import { removeWhiteBackground } from "@/utils/imageProcessing";
+import { Layer } from "@/hooks/useLayers";
 
 export function useCanvasSolver(
   isVoiceSessionActive: boolean,
   findOrCreateLayer?: (name: string) => string,
-  activeLayerId?: string
+  activeLayerId?: string,
+  layers: Layer[] = [],
+  assignShapeToLayer?: (shapeId: TLShapeId, layerId: string) => void,
+  getLayerIdForShape?: (shapeId: TLShapeId) => string | null
 ) {
   const editor = useEditor();
   const [pendingImageIds, setPendingImageIds] = useState<TLShapeId[]>([]);
@@ -55,7 +59,7 @@ export function useCanvasSolver(
       }
 
       const shapeIds = editor.getCurrentPageShapeIds();
-      if (shapeIds.size === 0 && options?.source !== "chat") {
+      if (shapeIds.size === 0 && options?.source !== "chat" && options?.source !== "voice") {
         return { success: false, textContent: "" };
       }
 
@@ -178,18 +182,24 @@ export function useCanvasSolver(
         const shapeWidth = img.width * scale;
         const shapeHeight = img.height * scale;
 
-        // Resolve target layer
-        let destinationLayerId = activeLayerId;
+        // Resolve target layer - fallback to active, then first available, then 'default'
+        let destinationLayerId = activeLayerId || layers[0]?.id || 'default';
         if (targetLayerName && findOrCreateLayer) {
           destinationLayerId = findOrCreateLayer(targetLayerName);
         }
+
+        // Use the latest visibility from the layers array
+        // Note: if destinationLayerId was just created, it won't be in 'layers' yet
+        // but it will be isVisible: true by default, so initialOpacity 1 is correct.
+        const targetLayer = layers.find(l => l.id === destinationLayerId);
+        const initialOpacity = targetLayer?.isVisible === false ? 0 : 1;
 
         editor.createShape({
           id: shapeId,
           type: "image",
           x: viewportBounds.x + (viewportBounds.width - shapeWidth) / 2,
           y: viewportBounds.y + (viewportBounds.height - shapeHeight) / 2,
-          opacity: 1.0,
+          opacity: initialOpacity,
           isLocked: true,
           props: {
             w: shapeWidth,
@@ -200,6 +210,10 @@ export function useCanvasSolver(
             layerId: destinationLayerId,
           },
         });
+
+        if (assignShapeToLayer) {
+          assignShapeToLayer(shapeId, destinationLayerId);
+        }
 
         setPendingImageIds((prev) => [...prev, shapeId]);
         
@@ -238,7 +252,7 @@ export function useCanvasSolver(
         abortControllerRef.current = null;
       }
     },
-    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage, isAIEnabled, findOrCreateLayer, activeLayerId],
+    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage, isAIEnabled, findOrCreateLayer, activeLayerId, layers, assignShapeToLayer],
   );
 
   const handleAutoGeneration = useCallback(() => {
@@ -274,12 +288,18 @@ export function useCanvasSolver(
     (shapeId: TLShapeId) => {
       if (!editor) return;
       isUpdatingImageRef.current = true;
-      editor.updateShape({ id: shapeId, type: "image", isLocked: false, opacity: 1 });
+      
+      const shape = editor.getShape(shapeId);
+      const layerId = getLayerIdForShape ? getLayerIdForShape(shapeId) : (shape?.meta as any)?.layerId;
+      const layer = layers.find(l => l.id === layerId);
+      const targetOpacity = layer?.isVisible === false ? 0 : 1;
+
+      editor.updateShape({ id: shapeId, type: "image", isLocked: false, opacity: targetOpacity });
       editor.updateShape({ id: shapeId, type: "image", isLocked: true });
       setPendingImageIds((prev) => prev.filter((id) => id !== shapeId));
       setTimeout(() => { isUpdatingImageRef.current = false; }, 100);
     },
-    [editor]
+    [editor, getLayerIdForShape, layers]
   );
 
   const handleReject = useCallback(
