@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ViewIcon, 
   ViewOffIcon, 
-  Plus01Icon, 
+  PlusSignIcon, 
   Delete02Icon, 
   ArrowUp01Icon, 
   ArrowDown01Icon,
@@ -76,7 +76,7 @@ export function LayerPanel({
               onClick={onAddLayer}
               className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600"
             >
-              <Plus01Icon size={18} />
+              <PlusSignIcon size={18} />
             </Button>
           </div>
 

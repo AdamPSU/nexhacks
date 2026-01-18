@@ -5,7 +5,7 @@ import {
   type TLUiOverrides,
   loadSnapshot,
 } from "tldraw";
-import React, { type ReactElement } from "react";
+import React, { useState, type ReactElement } from "react";
 import {
   Cursor02Icon,
   ThreeFinger05Icon,
@@ -48,6 +48,8 @@ interface BoardClientProps {
 }
 
 export function BoardClient({ id, initialData }: BoardClientProps) {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
   return (
     <Tldraw
       overrides={hugeIconsOverrides}
@@ -66,7 +68,11 @@ export function BoardClient({ id, initialData }: BoardClientProps) {
         }
       }}
     >
-      <BoardContent id={id} />
+      <BoardContent 
+        id={id} 
+        isChatOpen={isChatOpen} 
+        setIsChatOpen={setIsChatOpen} 
+      />
     </Tldraw>
   );
 }

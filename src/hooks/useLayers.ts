@@ -44,17 +44,21 @@ export function useLayers(editor: Editor | null) {
   useEffect(() => {
     if (!editor) return;
 
-    return editor.sideEffects.registerBeforeCreate('shape', (shape) => {
-      const activeLayer = layers.find(l => l.id === activeLayerId);
-      return {
-        ...shape,
-        opacity: activeLayer?.isVisible === false ? 0 : 1,
-        isLocked: activeLayer?.isLocked || false,
-        meta: {
-          ...shape.meta,
-          layerId: activeLayerId,
+    return editor.sideEffects.register({
+      shape: {
+        beforeCreate: (shape) => {
+          const activeLayer = layers.find(l => l.id === activeLayerId);
+          return {
+            ...shape,
+            opacity: activeLayer?.isVisible === false ? 0 : 1,
+            isLocked: activeLayer?.isLocked || false,
+            meta: {
+              ...shape.meta,
+              layerId: activeLayerId,
+            },
+          };
         },
-      };
+      },
     });
   }, [editor, activeLayerId, layers]);
 

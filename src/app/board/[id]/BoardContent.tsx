@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { TLShapeId } from "tldraw";
+import { TLShapeId, useEditor } from "tldraw";
 import { Button } from "@/components/ui/button";
 import { 
   Tick01Icon, 
@@ -16,8 +16,10 @@ import { Volume2, VolumeX } from "lucide-react";
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
 import { useCanvasSolver } from "@/hooks/useCanvasSolver";
 import { useBoardSync } from "@/hooks/useBoardSync";
+import { useLayers } from "@/hooks/useLayers";
 import { StatusIndicator } from "@/components/StatusIndicator";
 import { AIChatSidebar } from "@/components/AIChatSidebar";
+import { LayerPanel } from "@/components/LayerPanel";
 import { cn } from "@/lib/utils";
 
 function ImageActionButtons({
@@ -90,6 +92,19 @@ export function BoardContent({
     handleReject,
     isUpdatingImageRef,
   } = useCanvasSolver(isVoiceSessionActive);
+
+  const editor = useEditor();
+  const {
+    layers,
+    activeLayerId,
+    setActiveLayerId,
+    addLayer,
+    deleteLayer,
+    toggleVisibility,
+    toggleLock,
+    renameLayer,
+    moveLayer,
+  } = useLayers(editor);
 
   const voiceAgent = useVoiceAgent({
     onSessionChange: setIsVoiceSessionActive,
@@ -241,6 +256,18 @@ export function BoardContent({
           </span>
         </Button>
       </div>
+
+      <LayerPanel
+        layers={layers}
+        activeLayerId={activeLayerId}
+        onSetActiveLayer={setActiveLayerId}
+        onAddLayer={addLayer}
+        onDeleteLayer={deleteLayer}
+        onToggleVisibility={toggleVisibility}
+        onToggleLock={toggleLock}
+        onRenameLayer={renameLayer}
+        onMoveLayer={moveLayer}
+      />
     </>
   );
 }
