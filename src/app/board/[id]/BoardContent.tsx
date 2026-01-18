@@ -10,7 +10,8 @@ import {
   ArrowLeft01Icon,
   SparklesIcon,
   Mic02Icon,
-  MicOff02Icon
+  MicOff02Icon,
+  AiChat02Icon
 } from "hugeicons-react";
 import { Volume2, VolumeX } from "lucide-react";
 import { useVoiceAgent } from "@/hooks/useVoiceAgent";
@@ -150,6 +151,20 @@ export function BoardContent({
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ArrowLeft01Icon size={20} strokeWidth={2} />
           </Button>
+          
+          <Button 
+            variant={isAIEnabled ? "default" : "outline"}
+            onClick={() => setIsAIEnabled(!isAIEnabled)}
+            className={cn(
+              "h-10 px-4 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all gap-2",
+              isAIEnabled ? "bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
+            )}
+          >
+            <SparklesIcon size={18} fill={isAIEnabled ? "currentColor" : "none"} />
+            <span className="text-sm font-medium">
+              {isAIEnabled ? "AI Enabled" : "Enable AI"}
+            </span>
+          </Button>
         </div>
       )}
 
@@ -189,12 +204,25 @@ export function BoardContent({
           position: 'absolute',
           bottom: '12px',
           left: '50%',
-          transform: 'translateX(-253px) translateX(-50%)',
+          transform: 'translateX(-280px) translateX(-50%)',
           zIndex: 1000,
           display: 'flex',
           gap: '8px',
         }}
       >
+        <Button 
+          variant={isChatOpen ? "default" : "outline"}
+          size="icon"
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          className={cn(
+            "h-10 w-10 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all flex items-center justify-center",
+            isChatOpen ? "bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
+          )}
+          title="Toggle AI Chat"
+        >
+          <AiChat02Icon size={18} />
+        </Button>
+
         {isVoiceSessionActive && (
           <Button
             variant="outline"
@@ -247,29 +275,6 @@ export function BoardContent({
         onReject={handleReject}
       />
 
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '12px',
-          left: '50%',
-          transform: 'translateX(280px) translateX(-40%)',
-          zIndex: 1000,
-        }}
-      >
-        <Button 
-          variant={isAIEnabled ? "default" : "outline"}
-          onClick={() => setIsAIEnabled(!isAIEnabled)}
-          className={cn(
-            "h-10 px-4 rounded-xl shadow-md border border-neutral-200 dark:border-neutral-800 transition-all gap-2",
-            isAIEnabled ? "bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200" : "bg-white dark:bg-neutral-900 text-black dark:text-white hover:bg-neutral-50"
-          )}
-        >
-          <SparklesIcon size={18} fill={isAIEnabled ? "currentColor" : "none"} />
-          <span className="text-sm font-medium">
-            {isAIEnabled ? "AI Enabled" : "Enable AI"}
-          </span>
-        </Button>
-      </div>
 
       <LayerPanel
         layers={layers}
@@ -281,6 +286,7 @@ export function BoardContent({
         onToggleLock={wrapLayerAction(toggleLock)}
         onRenameLayer={wrapLayerAction(renameLayer)}
         onMoveLayer={wrapLayerAction(moveLayer)}
+        isChatOpen={isChatOpen}
       />
     </>
   );

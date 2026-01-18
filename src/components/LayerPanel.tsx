@@ -25,6 +25,7 @@ interface LayerPanelProps {
   onToggleLock: (id: string) => void;
   onRenameLayer: (id: string, name: string) => void;
   onMoveLayer: (id: string, direction: 'up' | 'down') => void;
+  isChatOpen?: boolean;
 }
 
 export function LayerPanel({
@@ -37,6 +38,7 @@ export function LayerPanel({
   onToggleLock,
   onRenameLayer,
   onMoveLayer,
+  isChatOpen = false,
 }: LayerPanelProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -56,13 +58,13 @@ export function LayerPanel({
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[1000] flex flex-col items-end gap-2 pointer-events-none">
+    <div className="fixed bottom-0 right-0 z-[1000] flex flex-col items-end gap-2 pointer-events-none">
       <AnimatePresence>
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 20, scale: 0.95 }}
-          className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl overflow-hidden w-72 pointer-events-auto flex flex-col"
+          className="bg-white dark:bg-neutral-900 border-t border-l border-neutral-200 dark:border-neutral-800 rounded-tl-2xl shadow-xl overflow-hidden w-72 pointer-events-auto flex flex-col"
         >
           {/* Header */}
           <div className="p-3 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50/50 dark:bg-neutral-950/50">
@@ -81,7 +83,12 @@ export function LayerPanel({
           </div>
 
           {/* Layer List */}
-          <div className="max-h-[300px] overflow-y-auto custom-scrollbar p-2 space-y-1">
+          <div 
+            className={cn(
+              "overflow-y-auto custom-scrollbar p-2 space-y-1 pb-4 transition-all duration-300",
+              isChatOpen ? "max-h-[150px]" : "max-h-[300px]"
+            )}
+          >
             {reversedLayers.map((layer, index) => {
               const isActive = activeLayerId === layer.id;
               const isFirst = index === 0;

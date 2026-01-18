@@ -218,12 +218,13 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         abortControllerRef.current = null;
       }
     },
-    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage],
+    [editor, pendingImageIds, isVoiceSessionActive, getStatusMessage, isAIEnabled],
   );
 
   const handleAutoGeneration = useCallback(() => {
+    if (!isAIEnabled) return;
     void generateSolution({ source: "auto" });
-  }, [generateSolution]);
+  }, [generateSolution, isAIEnabled]);
 
   useDebounceActivity(handleAutoGeneration, 2000, editor, isUpdatingImageRef, isProcessingRef);
 

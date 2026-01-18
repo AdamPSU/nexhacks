@@ -51,8 +51,12 @@ export function BoardClient({ id, initialData }: BoardClientProps) {
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   return (
-    <Tldraw
-      overrides={hugeIconsOverrides}
+    <div className="tldraw__editor w-full h-full relative group">
+      <style>{`
+        .tlui-lock-button { display: none !important; }
+      `}</style>
+      <Tldraw
+        overrides={hugeIconsOverrides}
       components={{
         MenuPanel: null,
         NavigationPanel: null,
@@ -74,6 +78,7 @@ export function BoardClient({ id, initialData }: BoardClientProps) {
         setIsChatOpen={setIsChatOpen} 
       />
     </Tldraw>
+    </div>
   );
 }
 
