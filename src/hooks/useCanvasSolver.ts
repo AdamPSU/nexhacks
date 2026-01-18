@@ -51,7 +51,7 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
       }
 
       const shapeIds = editor.getCurrentPageShapeIds();
-      if (shapeIds.size === 0) {
+      if (shapeIds.size === 0 && options?.source !== "chat") {
         return { success: false, textContent: "" };
       }
 
@@ -63,26 +63,31 @@ export function useCanvasSolver(isVoiceSessionActive: boolean) {
         const viewportBounds = editor.getViewportPageBounds();
         const shapesToCapture = [...shapeIds].filter(id => !pendingImageIds.includes(id));
         
-        if (shapesToCapture.length === 0) {
+        let blob: Blob | null = null;
+        if (shapesToCapture.length > 0) {
+          const result = await editor.toImage(shapesToCapture, {
+            format: "jpeg",    
+            quality: 0.7,     
+            scale: 0.7,        
+            bounds: viewportBounds,
+            background: true,
+            padding: 0,
+          });
+          blob = result.blob;
+        }
+
+        if (shapesToCapture.length > 0 && !blob) {
           isProcessingRef.current = false;
           return { success: false, textContent: "" };
         }
 
-        // Optimized Capture: Using viewport but with compression and lower scale
-        const { blob } = await editor.toImage(shapesToCapture, {
-          format: "jpeg",    
-          quality: 0.7,     
-          scale: 0.7,        
-          bounds: viewportBounds,
-          background: true,
-          padding: 0,
-        });
-
-        if (!blob || signal.aborted) return { success: false, textContent: "" };
+        if (signal.aborted) return { success: false, textContent: "" };
 
         // OPTIMIZATION: Skip Base64 conversion and send raw binary via FormData
         const formData = new FormData();
-        formData.append("image", blob, "canvas.jpg");
+        if (blob) {
+          formData.append("image", blob, "canvas.jpg");
+        }
         if (options?.promptOverride) {
           formData.append("prompt", options.promptOverride);
         }

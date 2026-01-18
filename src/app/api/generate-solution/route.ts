@@ -28,11 +28,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!imageFile) return NextResponse.json({ error: 'No image provided' }, { status: 400 });
+    let base64Data: string | null = null;
+    let mimeType: string | null = null;
 
-    const buffer = Buffer.from(await imageFile.arrayBuffer());
-    const base64Data = buffer.toString('base64');
-    const mimeType = imageFile.type || 'image/jpeg';
+    if (imageFile) {
+      const buffer = Buffer.from(await imageFile.arrayBuffer());
+      base64Data = buffer.toString('base64');
+      mimeType = imageFile.type || 'image/jpeg';
+    }
 
     let textContent = "";
     let shouldDraw = true;
@@ -48,6 +51,11 @@ export async function POST(req: NextRequest) {
         classifierParts.push({ inlineData: img });
       });
 
+      // Include canvas snapshot if available
+      if (base64Data && mimeType) {
+        classifierParts.push({ inlineData: { data: base64Data, mimeType } });
+      }
+
       const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: [{
@@ -59,9 +67,14 @@ export async function POST(req: NextRequest) {
         }
       });
       
-      const intentData = JSON.parse(result.text || "{}");
+      const rawClassifierText = result.text || "{}";
+      solutionLogger.info({ requestId, rawClassifierText }, 'Classifier raw response');
+
+      const intentData = JSON.parse(rawClassifierText);
       textContent = intentData.message || "";
       shouldDraw = intentData.intent?.toLowerCase() === "draw";
+
+      solutionLogger.info({ requestId, intent: intentData.intent, hasMessage: !!textContent, shouldDraw }, 'Classifier parsed intent');
       
       if (!shouldDraw) {
         return NextResponse.json({
@@ -73,6 +86,16 @@ export async function POST(req: NextRequest) {
     }
 
     // --- STAGE 2: ARTIST DELEGATION ---
+    // If we need to draw but have no canvas snapshot, we can't proceed (artist needs context)
+    if (shouldDraw && (!base64Data || !mimeType)) {
+      return NextResponse.json({
+        success: false,
+        imageUrl: null,
+        textContent: textContent || "I'd love to help you draw that, but I need to see the canvas first. Try drawing a quick sketch!",
+        reason: 'No canvas image provided for drawing intent.'
+      });
+    }
+
     const artistPrompt = fs.readFileSync(path.join(process.cwd(), 'prompts', 'artist.txt'), 'utf8');
     const fullPrompt = prompt 
       ? `${artistPrompt}\n\nUSER INPUT: "${prompt}"`
@@ -80,8 +103,11 @@ export async function POST(req: NextRequest) {
 
     const artistParts: any[] = [
       { text: fullPrompt },
-      { inlineData: { data: base64Data, mimeType } } // Canvas snapshot
     ];
+
+    if (base64Data && mimeType) {
+      artistParts.push({ inlineData: { data: base64Data, mimeType } }); // Canvas snapshot
+    }
 
     // Add reference images to the artist's context
     referenceImages.forEach(img => {
