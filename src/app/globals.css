@@ -135,3 +135,15 @@
 .tl-canvas {
   background-color: #ffffff !important;
 }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-neutral-200 dark:bg-neutral-800 rounded-full;
+  }
+}

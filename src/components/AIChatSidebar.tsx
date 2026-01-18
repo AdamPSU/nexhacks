@@ -154,43 +154,45 @@ export function AIChatSidebar({ isOpen, onClose, onSubmit, status, voiceAgent }:
 
           <div 
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar"
+            className="flex-1 overflow-y-auto custom-scrollbar [direction:rtl]"
           >
-            {messages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-50">
-                <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-900 rounded-full flex items-center justify-center mb-4">
-                  <Sparkles size={24} />
+            <div className="[direction:ltr] p-4 flex flex-col gap-4">
+              {messages.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-center p-6 opacity-50">
+                  <div className="w-12 h-12 bg-neutral-100 dark:bg-neutral-900 rounded-full flex items-center justify-center mb-4">
+                    <Sparkles size={24} />
+                  </div>
+                  <p className="text-sm font-medium">How can I help you draw today?</p>
+                  <p className="text-xs mt-1">Try "draw a cat" or "add a table".</p>
                 </div>
-                <p className="text-sm font-medium">How can I help you draw today?</p>
-                <p className="text-xs mt-1">Try "draw a cat" or "add a table".</p>
-              </div>
-            )}
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={cn(
-                  "flex flex-col gap-1 max-w-[85%]",
-                  m.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
-                )}
-              >
+              )}
+              {messages.map((m) => (
                 <div
+                  key={m.id}
                   className={cn(
-                    "px-3 py-2 rounded-2xl text-sm shadow-sm",
-                    m.role === "user"
-                      ? "bg-black text-white dark:bg-white dark:text-black"
-                      : "bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
+                    "flex flex-col gap-1 max-w-[85%]",
+                    m.role === "user" ? "ml-auto items-end" : "mr-auto items-start"
                   )}
                 >
-                  {m.content}
+                  <div
+                    className={cn(
+                      "px-3 py-2 rounded-2xl text-sm shadow-sm",
+                      m.role === "user"
+                        ? "bg-black text-white dark:bg-white dark:text-black"
+                        : "bg-neutral-100 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100"
+                    )}
+                  >
+                    {m.content}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {status === "generating" && (
-              <div className="flex items-center gap-2 text-xs text-neutral-500 italic px-2">
-                <Loader2 size={12} className="animate-spin" />
-                Thinking...
-              </div>
-            )}
+              ))}
+              {status === "generating" && (
+                <div className="flex items-center gap-2 text-xs text-neutral-500 italic px-2">
+                  <Loader2 size={12} className="animate-spin" />
+                  Thinking...
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 backdrop-blur-sm">
